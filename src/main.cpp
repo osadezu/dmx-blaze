@@ -1,9 +1,7 @@
 #include <Arduino.h>
-
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <WiFiClientSecure.h>
-
 #include <esp_dmx.h>
 #include <WebSocketsClient.h>
 
@@ -13,7 +11,6 @@ WiFiMulti wiFiMulti;
 WebSocketsClient webSocket;
 
 #define USE_SERIAL Serial
-#define DATA2 27
 
 const int ledPin = 13;
 const int transmitPin = 17;
@@ -21,11 +18,6 @@ const int receivePin = 16;
 const int enablePin = 4;
 
 const dmx_port_t dmxPort = DMX_NUM_1;
-
-const dmx_config_t config = DMX_CONFIG_DEFAULT;
-const int personality_count = 1;
-dmx_personality_t personalities[] = {
-    {11, "11 Channel Mode"}};
 uint8_t data[DMX_PACKET_SIZE] = {0};
 
 bool dmxIsConnected = false;
@@ -81,6 +73,9 @@ void setup()
 
   Serial.begin(921600);
 
+  const dmx_config_t config = DMX_CONFIG_DEFAULT;
+  const int personality_count = 1;
+  dmx_personality_t personalities[] = {{11, "11 Channel Mode"}};
   dmx_driver_install(dmxPort, &config, personalities, personality_count);
   dmx_set_pin(dmxPort, transmitPin, receivePin, enablePin);
 
@@ -99,15 +94,15 @@ void setup()
 
 void loop()
 {
-  dmx_packet_t packet;
-  int packetSize = dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK);
+  dmx_packet_t packet_info;
+  int packetSize = dmx_receive(dmxPort, &packet_info, DMX_TIMEOUT_TICK);
 
   if (packetSize > 0)
   {
     // Serial.println("DMX Received!");
     unsigned long thisFrame = millis();
 
-    if (!packet.err)
+    if (!packet_info.err)
     {
       if (!dmxIsConnected)
       {
@@ -116,7 +111,7 @@ void loop()
         dmxIsConnected = true;
       }
 
-      dmx_read(dmxPort, data, packet.size);
+      dmx_read(dmxPort, data, packet_info.size);
 
       if (thisFrame - lastFrame >= 40)
       {
